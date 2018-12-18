@@ -1,0 +1,162 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "spec": {
+    "backoffLimit": 0,
+    "template": {
+      "spec": {
+        "restartPolicy": "Never",
+        "initContainers": [
+          {
+            "image": "rucio/rucio-clients-atlas",
+            "command": [
+              "sh",
+              "-c",
+              "cat /secrets/grid|voms-proxy-init --key /secrets/userkey.pem --cert /secrets/usercert.pem --voms atlas --out $X509_USER_PROXY --pwstdin\npython /etc/pilot/minipilot.py stagein /etc/config/jobconfig.json /scratch/.run.sh\nchmod +x /scratch/.run.sh\n"
+            ],
+            "env": [
+              {
+                "value": "x509_proxy",
+                "name": "RUCIO_AUTH_TYPE"
+              },
+              {
+                "value": "lheinric",
+                "name": "RUCIO_ACCOUNT"
+              },
+              {
+                "value": "/tmp/x509poxy",
+                "name": "X509_USER_PROXY"
+              }
+            ],
+            "volumeMounts": [
+              {
+                "name": "config-volume",
+                "mountPath": "/etc/config"
+              },
+              {
+                "name": "minipilot-volume",
+                "mountPath": "/etc/pilot"
+              },
+              {
+                "name": "scratch-volume",
+                "mountPath": "/scratch"
+              },
+              {
+                "name": "secret-volume",
+                "mountPath": "/secrets"
+              }
+            ],
+            "name": "stagein"
+          },
+          {
+            "image": "busybox",
+            "command": [
+              "sh",
+              "-c",
+              "/scratch/.run.sh"
+            ],
+            "volumeMounts": [
+              {
+                "name": "scratch-volume",
+                "mountPath": "/scratch"
+              }
+            ],
+            "workingDir": "/scratch",
+            "name": "payload"
+          }
+        ],
+        "containers": [
+          {
+            "image": "rucio/rucio-clients-atlas",
+            "command": [
+              "sh",
+              "-c",
+              "cat /secrets/grid|voms-proxy-init --key /secrets/userkey.pem --cert /secrets/usercert.pem --voms atlas --out $X509_USER_PROXY --pwstdin\ncd /scratch\nls -lrt\npython /etc/pilot/minipilot.py stageout /etc/config/jobconfig.json \n"
+            ],
+            "env": [
+              {
+                "value": "x509_proxy",
+                "name": "RUCIO_AUTH_TYPE"
+              },
+              {
+                "value": "lheinric",
+                "name": "RUCIO_ACCOUNT"
+              },
+              {
+                "value": "/tmp/x509poxy",
+                "name": "X509_USER_PROXY"
+              },
+              {
+                "value": "UKI-NORTHGRID-MAN-HEP_SCRATCHDISK",
+                "name": "MINIPILOT_STAGEOUT_RSE"
+              }
+            ],
+            "volumeMounts": [
+              {
+                "name": "config-volume",
+                "mountPath": "/etc/config"
+              },
+              {
+                "name": "minipilot-volume",
+                "mountPath": "/etc/pilot"
+              },
+              {
+                "name": "scratch-volume",
+                "mountPath": "/scratch"
+              },
+              {
+                "name": "secret-volume",
+                "mountPath": "/secrets"
+              }
+            ],
+            "name": "stageout"
+          }
+        ],
+        "volumes": [
+          {
+            "configMap": {
+              "name": "__SETME__"
+            },
+            "name": "config-volume"
+          },
+          {
+            "configMap": {
+              "name": "minipilot"
+            },
+            "name": "minipilot-volume"
+          },
+          {
+            "secret": {
+              "items": [
+                {
+                  "path": "grid",
+                  "mode": 256,
+                  "key": "grid"
+                },
+                {
+                  "path": "userkey.pem",
+                  "mode": 256,
+                  "key": "userkey.pem"
+                },
+                {
+                  "path": "usercert.pem",
+                  "mode": 384,
+                  "key": "usercert.pem"
+                }
+              ],
+              "secretName": "gridpw"
+            },
+            "name": "secret-volume"
+          },
+          {
+            "name": "scratch-volume",
+            "emptyDir": {}
+          }
+        ]
+      }
+    }
+  },
+  "metadata": {
+    "name": "slicejob"
+  }
+}

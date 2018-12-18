@@ -1,0 +1,64 @@
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+  name: dsjobset-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dsjobset-controller
+  template:
+    metadata:
+      labels:
+        app: dsjobset-controller
+    spec:
+      containers:
+      - name: controller
+        image: rucio/rucio-clients-atlas
+        env:
+        - name: RUCIO_AUTH_TYPE
+          value: x509_proxy
+        - name: RUCIO_ACCOUNT
+          value: lheinric
+        - name: X509_USER_PROXY
+          value: /tmp/x509poxy
+        command:
+        - sh
+        - -c
+        - |
+          cat /secrets/grid|voms-proxy-init --key /secrets/userkey.pem --cert /secrets/usercert.pem --voms atlas --out $X509_USER_PROXY --pwstdin
+          cd /hooks
+          python sync.py
+        volumeMounts:
+        - name: hooks
+          mountPath: /hooks
+        - name: secret-volume
+          mountPath: /secrets
+          readOnly: false
+      volumes:
+      - name: hooks
+        configMap:
+          name: dsjobset-controller
+      - name: secret-volume
+        secret:
+          secretName: gridpw
+          items:
+          - key: grid
+            path: grid
+            mode: 256
+          - key: userkey.pem
+            path: userkey.pem
+            mode: 256
+          - key: usercert.pem
+            path: usercert.pem
+            mode: 384
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dsjobset-controller
+spec:
+  selector:
+    app: dsjobset-controller
+  ports:
+  - port: 80
