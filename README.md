@@ -1,5 +1,22 @@
 # k8s-datasetjob-crd
-HEP style dataset job CRD
+HEP style dataset job CRD:
+
+```
+apiVersion: wlcg.cern.ch/v1
+kind: DatasetJobSet
+metadata:
+  name: task
+spec:
+  taskid: 111119
+  inDS: user.lheinric:testhpscan.v2
+  outDS: user.lheinric:outputtest.v11
+  user: lheinric
+  outputs:
+  - out.json
+  exec_template: echo %IN | tee out.json
+  image: alpine
+```
+
 
 ## Requirements
 * `docker`
@@ -35,4 +52,9 @@ Change `taskid` (some number) and `outDS` (some name)
 
 ```
 kubectl create -f dsjob.yml
+```
+
+Follow Progress via
+```
+kubectl get dsj task -o yaml
 ```
