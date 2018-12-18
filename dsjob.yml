@@ -3,9 +3,9 @@ kind: DatasetJobSet
 metadata:
   name: task
 spec:
-  taskid: 111119
-  inDS: user.lheinric:testhpscan.v2
-  outDS: user.lheinric:outputtest.v11
+  taskid: 111120
+  inDS: user.mguth:user.mguth.DL1_new_configs
+  outDS: user.lheinric:outputtest.v12
   user: lheinric
   outputs:
   - out.json

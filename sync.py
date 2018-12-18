@@ -2,6 +2,8 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import json
 from rucio.client import Client
 import logging
+import hashlib
+
 logging.basicConfig(level = logging.WARNING)
 log = logging.getLogger(__name__)
 
@@ -10,6 +12,8 @@ def generate_desired(gridjobspec):
     scope,name = gridjobspec['inDS'].split(':',1)
     nFilesPerJob = gridjobspec.get('nFilesPerJob',3)
     files = sorted(list(c.list_files(scope,name))   )
+    
+    log.warning('files %s',len(files))
 
     def chunks(l, n):
         for i in range(0, len(l), n):
@@ -52,8 +56,8 @@ def generate_desired(gridjobspec):
         configmaps.append(configmap)
         jobs.append(job)
 
+    log.warning('jobs: %s cmaps: %s', len(jobs),len(configmaps))
     children = configmaps + jobs
-    import hashlib
     log.warning('children hash %s',hashlib.sha1(json.dumps(children, sort_keys = True)).hexdigest())
     return len(jobs),children
 
@@ -99,7 +103,7 @@ class Controller(BaseHTTPRequestHandler):
       last_total = parent.get('status',{}).get('total')
       last_counts = observed_counts(children["Job.batch/v1"], last_total)
       last_outds = parent.get('status',{}).get('outds',False)
-      if last_counts['succeeded'] == last_total and not last_outds:
+      if last_total > 0 and last_counts['succeeded'] == last_total and not last_outds:
          log.warning('all done!')
          make_outDS(spec)
          last_outds = True

@@ -9,6 +9,13 @@ go:
 install:
 - go get sigs.k8s.io/kind
 - kind create cluster
+- export KUBECONFIG="$(kind get kubeconfig-path --name="1")"
 
 script:
-- echo ok
+- kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/metacontroller/master/manifests/metacontroller-rbac.yaml
+- kubectl apply -f https://raw.githubusercontent.com/GoogleCloudPlatform/metacontroller/master/manifests/metacontroller.yaml
+- kubectl create configmap dsjobset-controller --from-file=sync.py --from-file=slicejob_template.json
+- kubectl create configmap minipilot --from-file=minipilot.py
+- kubectl create -f crd.yml -f hook.yml -f ctrl.yml
+- kubectl create secret generic gridpw --from-file=grid --from-file=$HOME/.globus/userkey.pem --from-file=$HOME/.globus/usercert.pem
+- kubectl get all
