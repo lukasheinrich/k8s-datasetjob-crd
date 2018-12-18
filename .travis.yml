@@ -6,6 +6,9 @@ language: go
 go:
 - '1.10.x'
 
-script:
+install:
 - go get sigs.k8s.io/kind
 - kind create cluster
+
+script:
+- echo ok
